@@ -1,10 +1,11 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <random>
+#include <chrono>
 
-constexpr const unsigned short N = 1024;
-constexpr const unsigned short BLOCK_SIZE = 256;
-constexpr const unsigned short NUM_BLOCKS = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+constexpr const unsigned int N = 1048576;
+constexpr const unsigned int BLOCK_SIZE = 256;
+constexpr const unsigned int NUM_BLOCKS = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
 template <typename T>
 class RandomGenerator {
@@ -44,14 +45,14 @@ public:
 	}
 };
 
-__global__ void addVector(const float* const A, const float* const B, float* const C, const unsigned short N) {
+__global__ void addVector(const float* const A, const float* const B, float* const C, const unsigned int N) {
 	const size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < N) {
 		C[i] = A[i] + B[i];
 	}
 }
 
-__global__ void addInplace(const float* const A, float* const B, const unsigned short N) {
+__global__ void addInplace(const float* const A, float* const B, const unsigned int N) {
 	const size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < N) {
 		B[i] += A[i];
@@ -71,8 +72,10 @@ struct StateManager {
 /// @param input_a The vector to be added to be.
 /// @param input_b Added and overwritten
 /// @return 
-StateManager runInplace(const float* const input_a, float* const input_b, const unsigned short GPU_ID = 0) {
+StateManager runInplace(const float* const input_a, float* const input_b, const unsigned char GPU_ID = 0) {
 	StateManager state = { cudaSuccess, 0, nullptr, nullptr };
+
+	
 
 	// Choose which GPU to run on, change this on a multi-GPU system.
 	state.cudaStatus = cudaSetDevice(GPU_ID);
@@ -108,8 +111,12 @@ StateManager runInplace(const float* const input_a, float* const input_b, const 
 		return state;
 	}
 
+	auto start = std::chrono::high_resolution_clock::now();
 	addInplace<<<NUM_BLOCKS, BLOCK_SIZE>>> (state.gpu_a, state.gpu_b, N);
-	
+	auto end = std::chrono::high_resolution_clock::now();
+
+	printf("Addition completed in %lld microseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+
 	state.cudaStatus = cudaGetLastError();
 	if (state.cudaStatus != cudaSuccess) {
 		fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(state.cudaStatus));
@@ -125,7 +132,7 @@ StateManager runInplace(const float* const input_a, float* const input_b, const 
 	return state;
 }
 
-cudaError_t add_inplace(const float* const input_a, float* const input_b, const unsigned short GPU_ID = 0) {
+cudaError_t add_inplace(const float* const input_a, float* const input_b, const unsigned char GPU_ID = 0) {
 	StateManager state = runInplace(input_a, input_b, GPU_ID);
 	if (state.byteCode & 0b00000001) {
 		cudaFree(state.gpu_a);
