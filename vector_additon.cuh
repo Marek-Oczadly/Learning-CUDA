@@ -114,8 +114,9 @@ StateManager runInplace(const float* const input_a, float* const input_b, const 
 	auto start = std::chrono::high_resolution_clock::now();
 	addInplace<<<NUM_BLOCKS, BLOCK_SIZE>>> (state.gpu_a, state.gpu_b, N);
 	auto end = std::chrono::high_resolution_clock::now();
-
-	printf("Addition completed in %lld microseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+	std::chrono::duration<double, std::milli> duration = end - start;
+	
+	printf("Kernel execution time: %.5f ms\n", duration.count());
 
 	state.cudaStatus = cudaGetLastError();
 	if (state.cudaStatus != cudaSuccess) {
