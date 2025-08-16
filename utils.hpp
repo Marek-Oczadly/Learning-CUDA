@@ -24,6 +24,7 @@ void generateMatrix(float (&matrix) [m][n], const float min = 0.0f, const float 
 	for (unsigned int i = 0; i < m * n; ++i) {
 		matrix[i] = static_cast<float>(i + 1);
 	}
+	return matrix;
 }
 
 [[nodiscard]] float* generateMatrix(const unsigned int m, const unsigned int n, const float min = 0.0f, const float max = 100.0f) noexcept {

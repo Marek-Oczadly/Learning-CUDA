@@ -3,9 +3,12 @@
 #include "naive-kernel.cuh"
 
 int main() {
-	constexpr unsigned int M = 4; // Height of A and C
-	constexpr unsigned int N = 4; // Width of B and C
-	constexpr unsigned int K = 4; // Width of A and Height of B
+	constexpr unsigned int M = 512; // Height of A and C
+	constexpr unsigned int N = 512; // Width of B and C
+	constexpr unsigned int K = 512; // Width of A and Height of B
+	constexpr unsigned int BLOCK_SIZE = 32; // Block size for CUDA kernel
+	constexpr unsigned int GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE);
+	constexpr unsigned int GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE);
 
 	float* d_A, * d_B, * d_C;
 	{
@@ -32,7 +35,7 @@ int main() {
 	// Initialize matrices A, B, and C
 
 	const dim3 blockdim(32, 32);
-	const dim3 griddim(CEIL_DIV(M, 32), CEIL_DIV(N, 32));
+	const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
 
 	naiveSGEMM<M, N, K> << <griddim, blockdim >> > (d_A, d_B, d_C);
 
