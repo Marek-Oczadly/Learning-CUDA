@@ -5,6 +5,9 @@
     <ClInclude Include="naive-kernel.cuh">
       <Filter>matmul</Filter>
     </ClInclude>
+    <ClInclude Include="gmem-coalescing.cuh">
+      <Filter>matmul</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="matmul">
@@ -13,5 +16,10 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Main.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="notes.md">
+      <Filter>matmul</Filter>
+    </None>
   </ItemGroup>
 </Project>
