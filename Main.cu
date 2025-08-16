@@ -3,9 +3,9 @@
 #include "naive-kernel.cuh"
 
 int main() {
-	constexpr unsigned int M = 512; // Height of A and C
-	constexpr unsigned int N = 512; // Width of B and C
-	constexpr unsigned int K = 512; // Width of A and Height of B
+	constexpr unsigned int M = 4; // Height of A and C
+	constexpr unsigned int N = 4; // Width of B and C
+	constexpr unsigned int K = 4; // Width of A and Height of B
 
 	float* d_A, * d_B, * d_C;
 	{
@@ -35,7 +35,6 @@ int main() {
 	const dim3 griddim(CEIL_DIV(M, 32), CEIL_DIV(N, 32));
 
 	naiveSGEMM<M, N, K> << <griddim, blockdim >> > (d_A, d_B, d_C);
-
 
 
 	return 0;
