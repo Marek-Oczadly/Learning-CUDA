@@ -8,6 +8,9 @@
     <ClInclude Include="sgemm-one-dimensional.cuh">
       <Filter>matmul</Filter>
     </ClInclude>
+    <ClInclude Include="sgemm-shared-memory.cuh">
+      <Filter>matmul</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="matmul">

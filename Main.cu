@@ -3,12 +3,12 @@
 #include "naive-kernel.cuh"
 #include "sgemm-one-dimensional.cuh"
 
-constexpr bool checkIfWorks = false;
+constexpr bool checkIfWorks = true;
 
 int main() {
-	constexpr uint32_t M = 512U; // Height of A and C
-	constexpr uint32_t N = 512U; // Width of B and C
-	constexpr uint32_t K = 512U; // Width of A and Height of B
+	constexpr uint32_t M = 4096U; // Height of A and C
+	constexpr uint32_t N = 4096U; // Width of B and C
+	constexpr uint32_t K = 4096U; // Width of A and Height of B
 	constexpr uint32_t BLOCK_SIZE = 32U; // Block size for CUDA kernel
 	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE);
 	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE);
@@ -60,7 +60,7 @@ int main() {
 
 		// Running the naive SGEMM
 		const dim3 blockDim2(BLOCK_SIZE, BLOCK_SIZE);
-		naiveSGEMM<M, N, K> << <griddim, blockDim2 >> > (d_A, d_B, d_C);
+		naiveSGEMM<M, N, K> <<<griddim, blockDim2 >>> (d_A, d_B, d_C);
 		
 std::cout << "Naive SGEMM finished with grid size: " << griddim.x << "x" << griddim.y
 			<< " and block size: " << blockDim2.x << "x" << blockDim2.y << std::endl;

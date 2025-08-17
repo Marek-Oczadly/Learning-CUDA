@@ -79,6 +79,7 @@
   <ItemGroup>
     <ClInclude Include="sgemm-one-dimensional.cuh" />
     <ClInclude Include="naive-kernel.cuh" />
+    <ClInclude Include="sgemm-shared-memory.cuh" />
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>
