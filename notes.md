@@ -1,8 +1,8 @@
 ﻿# Efficient Matrix Multiplication in CUDA
 
 ## Kernel 1 - Naive implementation
-Each thread computers one element of the output Matrix C. For A, the row is held constant and the columns are iterated across. For B, the column is held constant and the rows are iterated across.
-### Parameters
+Each thread computes one element of the output Matrix C. For A, the row is held constant and the columns are iterated across. For B, the column is held constant and the rows are iterated across.
+### Parameters and variables
 #### Template Parameters
 * `M`: Height if Matrix A and Matrix C
 * `N`: Width of Matrix B and Matrix C
@@ -13,7 +13,13 @@ Each thread computers one element of the output Matrix C. For A, the row is held
 * `C`: Pointer to Matrix C with dimensions M × N
 * `alpha`: Scalar multiplier for the product of A and B
 * `beta`: Scalar multiplier for Matrix C
-
+#### Internal Variables
+* `row`: The row of Matrix A and C being processed by the thread
+* `col`: The column of Matrix B and C being processed by the thread
+* `sum`: Cumulative sum of the row of A and the column of B for the current element of C
+* `i`: Loop index that points to the element of the row of A and the column of B being processed
+### Nsight Profiling
+TODO
 ## Kernel 2 - One dimensional block
 
 ## Sources
