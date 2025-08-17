@@ -2,6 +2,7 @@
 #include <random>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 
 constexpr unsigned int CEIL_DIV(const unsigned int a, const unsigned int b) {
 	return (a + b - 1) / b;
@@ -17,6 +18,10 @@ void generateMatrix(float (&matrix) [m][n], const float min = 0.0f, const float 
 			value = dis(gen);
 		}
 	}
+}
+
+inline bool isNearlyEqual(const float a, const float b, const float difference = 1.0f) {
+	return (std::fabs(a - b) < difference);
 }
 
 [[nodiscard]] float* generateSequenceMatrix(const unsigned int m, const unsigned int n) {
@@ -69,7 +74,7 @@ template <typename T>
 }
 
 template<size_t m, size_t n>
-void printMatrix(const int (&matrix)[m][n], const unsigned char w = 6) {
+void printMatrix(const int (&matrix)[m][n], const unsigned char w = 6U) {
 	for (const auto& row : matrix) {
 		for (const auto& value : row) {
 			std::cout << std::setw(w) << value;
@@ -79,7 +84,7 @@ void printMatrix(const int (&matrix)[m][n], const unsigned char w = 6) {
 }
 
 template<size_t m, size_t n>
-void printMatrix(const float (&matrix)[m][n], const unsigned char w = 6, const unsigned char precision = 2) {
+void printMatrix(const float (&matrix)[m][n], const unsigned char w = 6U, const unsigned char precision = 2U) {
 	for (const auto& row : matrix) {
 		for (const auto& value : row) {
 			std::cout << std::setw(w) << std::fixed << std::setprecision(precision) << value;
@@ -89,11 +94,21 @@ void printMatrix(const float (&matrix)[m][n], const unsigned char w = 6, const u
 }
 
 template<size_t M, size_t N>
-void printMatrix(const float* const matrix, const unsigned int m = M, const unsigned int n = N, const unsigned char w = 6, const unsigned char precision = 2) {
+void printMatrix(const float* const matrix, const unsigned int m = M, const unsigned int n = N, const unsigned char w = 6U, const unsigned char precision = 2U) {
 	for (unsigned int row = 0; row < m; ++row) {
 		for (unsigned int col = 0; col < n; ++col) {
 			std::cout << std::setw(w) << std::fixed << std::setprecision(precision) << matrix[row * N + col];
 		}
 		std::cout << '\n';
 	}
+}
+
+template <size_t M, size_t N>
+bool AreEqualMatrices(const float* const matA, const float* const matB, const float diff = 0.0f) {
+	for (uint32_t i = 0; i < M * N; ++i) {
+		if (!isNearlyEqual(matA[i], matB[i], diff)) {
+			return false;
+		}
+	}
+	return true;
 }

@@ -3,7 +3,7 @@
 #include <cstdint>
 
 template <uint32_t M, uint32_t N, uint32_t K>
-__global__ void naiveSGEMM(float* A, float* B, float* C, float alpha = 1, float beta = 0) {
+__global__ void naiveSGEMM(const float* const A, const float* const B, float* const C, const float alpha = 1, const float beta = 0) {
     const uint32_t row = blockIdx.y * blockDim.y + threadIdx.y;
     const uint32_t col = blockIdx.x * blockDim.x + threadIdx.x;
     
