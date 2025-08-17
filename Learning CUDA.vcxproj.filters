@@ -5,7 +5,7 @@
     <ClInclude Include="naive-kernel.cuh">
       <Filter>matmul</Filter>
     </ClInclude>
-    <ClInclude Include="gmem-coalescing.cuh">
+    <ClInclude Include="sgemm-one-dimensional.cuh">
       <Filter>matmul</Filter>
     </ClInclude>
   </ItemGroup>

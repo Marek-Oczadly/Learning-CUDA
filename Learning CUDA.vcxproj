@@ -77,7 +77,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="gmem-coalescing.cuh" />
+    <ClInclude Include="sgemm-one-dimensional.cuh" />
     <ClInclude Include="naive-kernel.cuh" />
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
