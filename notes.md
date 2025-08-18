@@ -2,16 +2,19 @@
 
 ## Theoretical Lower Bounds
 * The theoretical lower bound for the number of floating point operations (FLOPs) required to perform SGEMM of Matrices A and B, 
-where A is of size M × K and B is of size K × N, is given by `MN * (2K + 1)`. Given that I am testing 2 equally sized square matrices of size N * N, this simplifies to `2N^3 + N^2`.
-The N used in testing is 4096, so the theoretical lower bound is `2*4096^3 + 4096^2` ≈ 137.5 * 10^9 FLOPs / 137 GFLOPs.
-* The lower bound for amount of memory read is `(K * M + N * K + M * N) * sizeof(float)`. Given that I am testing 2 equally sized square matrices of size `N * N` and CUDA uses 4 byte floats, this simplifies to `12 * N^2`.
-The N used for testing is 4096, so the lower bound for memory to read is `12 * 4096^2 * 4` ≈ 201 MB.
-* At minimum I must write to all values in C with makes the lower bound for memory to write `M * N * sizeof(float)`. Given that M and N are both 4096, this simplifies to `4096 * 4096 * 4` ≈ 67 MB.  
-Therefore, there is a total of 268MB of memory transfers to and from global memory and 137 GFLOPs of computation require to compute the result. The GPU used for testing is an RTX 2060 which has a memory bandwidth of 336 GB/s. The FP32 throughput isn't explicitly 
-specified but Turing architecture can perform FP32 FMA with a latency of 4 cycles. This means that assuming 4 level instruction-level parallelism (ILP) and full utilisation (which is rarely achieved in practice),
-each CUDA core can perform 1 FP32 FMA per cycle, or 2 FLOPs/cycle. The RTX 2060 has 1920 CUDA cores and a clock speed of 1680 MHz. This means that the theoretical peak FP32 throughput is `1920 * 1680 * 2` ≈ 6.45 TFLOPs. 
-This is a theoretical peak and the actual throughput will likely be lower.
-
+where A is of size **M × K** and B is of size **K × N**, is given by **MN × (2K + 1)**. Given that I am testing 2 equally sized square matrices of size **N × N**, this simplifies to **2N³ + N²**.
+The N used in testing is 4096, so the theoretical lower bound is **2*4096³ + 4096² ≈ 137.5 × 10⁹ FLOPs / 137.5 GFLOPs**.
+* The lower bound for amount of memory read is **(K × M + N × K + M × N) × sizeof(float)**. Given that I am testing 2 equally sized square matrices of size **N × N** and CUDA uses 4 byte floats,
+this simplifies to **12N²**. The N used for testing is 4096, so the lower bound for memory to read is **12 × 4096² × 4 ≈ 201 MB**.
+* At minimum I must write to all values in C with makes the lower bound for memory to write **M × N × sizeof(float)**. Given that M and N are both 4096, this simplifies to  **4096 × 4096 × 4 ≈ 
+67 MB**.  
+* Therefore, there is a total of 268MB of memory transfers to and from global memory and 137 GFLOPs of computation require to compute the result. 
+* The GPU used for testing is an RTX 2060 which has a memory bandwidth of 336 GB/s. 
+* The FP32 throughput isn't explicitly specified but Turing architecture can perform FP32 FMA with a latency of 4 cycles. This means that assuming 4 level instruction-level parallelism (ILP)
+and full utilisation (which is rarely achieved in practice), each CUDA core can perform 1 FP32 FMA per cycle, or 2 FLOPs/cycle. The RTX 2060 has 1920 CUDA cores and a clock speed of 1680 MHz. 
+This means that the theoretical peak FP32 throughput is **1920 × 1680 × 10⁶ × 2 ≈ 6.45 TFLOPs**. This is a theoretical peak and the actual throughput will likely be lower.
+* Using these numbers we can calculate that we will need at least **(268 × 10⁶) / (336 × 10⁹) ≈ 0.898ms** for the memory transfers and at least **(137.5 × 10⁹) / (6.45 × 10¹²) ≈ 21.3ms** for the computation.
+Since computation takes significantly longer that memory transfers, we can assume that <u>**computation will be the bottleneck in this case.**</u>
 
 ## Kernel 1 - Naive implementation
 Each thread computes one element of the output Matrix C. For A, the row is held constant and the columns are iterated across. For B, the column is held constant and the rows are iterated across.
