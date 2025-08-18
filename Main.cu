@@ -1,9 +1,9 @@
 #include <cuda_runtime.h>
 #include "utils.hpp"
 #include "naive-kernel.cuh"
-#include "sgemm-shared-memory.cuh"
+//#include "sgemm-shared-memory.cuh"
 
-constexpr bool checkIfWorks = true;
+constexpr bool checkIfWorks = false;
 
 int main() {
 	constexpr uint32_t M = 4096U; // Height of A and C
@@ -44,7 +44,7 @@ int main() {
 #endif
 	const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
 
-	SGEMMSharedMemory<M, N, K, BLOCK_SIZE> <<<griddim, blockDim >>> (d_A, d_B, d_C);
+	naiveSGEMM<M, N, K> <<<griddim, blockDim >>> (d_A, d_B, d_C);
 	std::cout << "SGEMM finished with grid size: " << griddim.x << "x" << griddim.y
 		<< " and block size: " << blockDim.x << "x" << blockDim.y << std::endl;
 	

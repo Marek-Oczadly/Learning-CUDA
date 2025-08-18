@@ -11,6 +11,9 @@
     <ClInclude Include="sgemm-shared-memory.cuh">
       <Filter>matmul</Filter>
     </ClInclude>
+    <ClInclude Include="one-dimensional-blocktiling.cuh">
+      <Filter>matmul</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="matmul">
