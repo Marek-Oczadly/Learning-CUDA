@@ -5,7 +5,7 @@
 #define OneDimensional 1
 
 template <uint32_t M, uint32_t N, uint32_t K, uint32_t BLOCKSIZE>
-__global__ void SGEMMSharedMemory(const float* A, const float* B, float* const C, const float alpha = 1, const float beta = 0) {
+__global__ void SGEMMSharedMemory(const float* A, const float* B, float* const C, const float alpha = 1.0f, const float beta = 0.0f) {
 	const uint32_t cCol = BLOCKSIZE * blockIdx.x + (threadIdx.x % BLOCKSIZE); // Column index in C
 	const uint32_t cRow = BLOCKSIZE * blockIdx.y + (threadIdx.x / BLOCKSIZE); // Row index in C
 

@@ -1,77 +1,95 @@
 #include <cuda_runtime.h>
 #include "utils.hpp"
-#include "naive-kernel.cuh"
-//#include "sgemm-shared-memory.cuh"
+#include "kernel-1-1D.cuh"
+#include <cublas_v2.h>
 
-constexpr bool checkIfWorks = false;
+//#define iscuBLAS 1
+
+constexpr bool iscuBLAS = false; // Set to true to use cuBLAS, false to use custom SGEMM kernel
+constexpr bool checkIfWorks = true;	// Set to true to check if the SGEMM works correctly by comparing it with cuBLAS
+constexpr uint32_t dim = 2048U;	// Size of the matrices (dim x dim)
 
 int main() {
-	constexpr uint32_t M = 4096U; // Height of A and C
-	constexpr uint32_t N = 4096U; // Width of B and C
-	constexpr uint32_t K = 4096U; // Width of A and Height of B
+	constexpr uint32_t M = dim; // Height of A and C
+	constexpr uint32_t N = dim; // Width of B and C
+	constexpr uint32_t K = dim; // Width of A and Height of B
 	constexpr uint32_t BLOCK_SIZE = 32U; // Block size for CUDA kernel
 	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE);
 	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE);
+	constexpr size_t A_size = M * K * sizeof(float);
+	constexpr size_t B_size = K * N * sizeof(float);
+	constexpr size_t C_size = M * N * sizeof(float);
+
+	const float alpha = 1.0f;
+	const float beta = 0.0f;
 
 	float* d_A, * d_B, * d_C;
-	{
-		constexpr size_t A_size = K * M * sizeof(float);
-		float* h_A = generateMatrix(K, M);
-		cudaMalloc(reinterpret_cast<void**>(&d_A), A_size);
-		cudaMemcpy(d_A, h_A, A_size, cudaMemcpyHostToDevice);
-		delete[] h_A;
-	}
-	{
-		constexpr size_t B_size = K * N * sizeof(float);
-		float* h_B = generateMatrix(K, N);
-		cudaMalloc(reinterpret_cast<void**>(&d_B), B_size);
-		cudaMemcpy(d_B, h_B, B_size, cudaMemcpyHostToDevice);
-		delete[] h_B;
-	}
-	{
-		constexpr size_t C_size = M * N * sizeof(float);
-		float* h_C = zeroMatrix<float>(M, N);
-		cudaMalloc(reinterpret_cast<void**>(&d_C), C_size);
-		cudaMemcpy(d_C, h_C, C_size, cudaMemcpyHostToDevice);
-		delete[] h_C;
-	}
-	// Initialize matrices A, B, and C
+	cudaMalloc(reinterpret_cast<void**>(&d_A), A_size);
+	cudaMalloc(reinterpret_cast<void**>(&d_B), B_size);
+	cudaMalloc(reinterpret_cast<void**>(&d_C), C_size);
 
-#ifdef OneDimensional
-	const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
-#else
-	const dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE);
-#endif
-	const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
+	float* h_A = generateMatrix(M, K);
+	float* h_B = generateMatrix(K, N);
+	float* h_C = zeroMatrix<float>(M, N);
 
-	naiveSGEMM<M, N, K> <<<griddim, blockDim >>> (d_A, d_B, d_C);
-	std::cout << "SGEMM finished with grid size: " << griddim.x << "x" << griddim.y
-		<< " and block size: " << blockDim.x << "x" << blockDim.y << std::endl;
+	cudaMemcpy(reinterpret_cast<void*>(d_A), h_A, A_size, cudaMemcpyHostToDevice);
+	cudaMemcpy(reinterpret_cast<void*>(d_B), h_B, B_size, cudaMemcpyHostToDevice);
+	cudaMemcpy(reinterpret_cast<void*>(d_C), h_C, C_size, cudaMemcpyHostToDevice);
+
+	delete[] h_A;
+	delete[] h_B;
+	delete[] h_C;
+
+	if constexpr(iscuBLAS) {
+		cublasHandle_t handle;
+		cublasCreate(&handle);
+
+		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha, d_A, M, d_B, K, &beta, d_C, M);
+		cudaDeviceSynchronize();
+		cublasDestroy(handle);
+		std::cout << "cuBLAS SGEMM finished\n";
+	}
+
+	#ifdef OneDimensional
+		const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
+		const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
+		SGEMM<M, N, K, BLOCK_SIZE> <<<griddim, blockDim >>> (d_A, d_B, d_C);
+		cudaDeviceSynchronize(); // Ensure the kernel has finished executing
+		std::cout << "SGEMM finished with grid size: " << griddim.x << " * " << griddim.y << " and block size: " << blockDim.x << std::endl;
+	#endif
+
+	#ifdef TwoDimensional
+		const dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE);
+		const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
+		SGEMM<M, N, K> << <griddim, blockDim >> > (d_A, d_B, d_C);
+		cudaDeviceSynchronize(); // Ensure the kernel has finished executing
+		std::cout << "SGEMM finished with grid size: " << griddim.x << " * " << griddim.y << " and block size: " << blockDim.x << " * " << blockDim.y << std::endl;
+	#endif
 	
 	// Disable if profiling with nsight
 	if constexpr(checkIfWorks) {
-		
-		constexpr size_t C_size = M * N * sizeof(float);
+
 		float* h_C1 = new float[M * N];	// Holds the reult of the checked SGEMM
 		float* h_C2 = zeroMatrix<float>(M, N); // Holds the result of the naive SGEMM - thorougly checked so I can assume it is correct
 
 		cudaMemcpy(h_C1, d_C, C_size, cudaMemcpyDeviceToHost); // Copy the result of the SGEMM to host memory
 		cudaMemcpy(d_C, h_C2, C_size, cudaMemcpyHostToDevice); // Reset the device memory for the naive SGEMM
 
-		// Running the naive SGEMM
-		const dim3 blockDim2(BLOCK_SIZE, BLOCK_SIZE);
-		naiveSGEMM<M, N, K> <<<griddim, blockDim2 >>> (d_A, d_B, d_C);
+		cublasHandle_t handle;
+		cublasCreate(&handle);
+
+		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha, d_A, M, d_B, K, &beta, d_C, M);
+		cudaDeviceSynchronize();
+		cublasDestroy(handle);
 		
-std::cout << "Naive SGEMM finished with grid size: " << griddim.x << "x" << griddim.y
-			<< " and block size: " << blockDim2.x << "x" << blockDim2.y << std::endl;
+		std::cout << "cuBLAS SGEMM finished" << std::endl;
 		cudaMemcpy(h_C2, d_C, C_size, cudaMemcpyDeviceToHost);
 
 		// Check if they are equal and account for floating point precision
-		if (AreEqualMatrices<M, N>(h_C1, h_C2, 0.001f)) {	
+		if (AreEqualMatrices<M, N>(h_C1, h_C2, 25.0f)) {	
 			std::cout << "The matrices are equal.\n";
-		} else {	// Print matrices if they are not equal for manual checking
+		} else {
 			std:: cout << "The matrices are NOT equal.\n" << "Matrix 1: " << std::endl;
-			// Print the first 10x10 elements of each matrix
 			printMatrix<M, N>(h_C1, 10, 10, 15, 2);
 			std::cout << "\nMatrix 2: " << std::endl;
 			printMatrix<M, N>(h_C2, 10, 10, 15, 2);

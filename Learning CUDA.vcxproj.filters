@@ -2,22 +2,37 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="utils.hpp" />
-    <ClInclude Include="naive-kernel.cuh">
-      <Filter>matmul</Filter>
+    <ClInclude Include="kernel-1-2D.cuh">
+      <Filter>matmul\two-dimensional</Filter>
     </ClInclude>
-    <ClInclude Include="sgemm-one-dimensional.cuh">
-      <Filter>matmul</Filter>
+    <ClInclude Include="kernel-1-1D.cuh">
+      <Filter>matmul\one-dimensional</Filter>
     </ClInclude>
-    <ClInclude Include="sgemm-shared-memory.cuh">
-      <Filter>matmul</Filter>
+    <ClInclude Include="kernel-2-1D.cuh">
+      <Filter>matmul\one-dimensional</Filter>
     </ClInclude>
-    <ClInclude Include="one-dimensional-blocktiling.cuh">
-      <Filter>matmul</Filter>
+    <ClInclude Include="kernel-3-2D.cuh">
+      <Filter>matmul\one-dimensional</Filter>
+    </ClInclude>
+    <ClInclude Include="hintfile-1D.cuh">
+      <Filter>matmul\one-dimensional</Filter>
+    </ClInclude>
+    <ClInclude Include="hintfile-2D.cuh">
+      <Filter>matmul\two-dimensional</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="matmul">
       <UniqueIdentifier>{518133c6-29be-4d3a-beb7-4ef037b96413}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="matmul\assets">
+      <UniqueIdentifier>{2bb32f7e-24c3-4e2f-bbae-769db48096b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="matmul\two-dimensional">
+      <UniqueIdentifier>{99dbcf22-8153-44d4-9d28-fb0c2e3d6c28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="matmul\one-dimensional">
+      <UniqueIdentifier>{375bda3a-784a-4d2f-bf88-c13b0b184a82}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
