@@ -11,13 +11,16 @@
     <ClInclude Include="kernel-2-1D.cuh">
       <Filter>matmul\one-dimensional</Filter>
     </ClInclude>
-    <ClInclude Include="kernel-3-2D.cuh">
-      <Filter>matmul\one-dimensional</Filter>
-    </ClInclude>
     <ClInclude Include="hintfile-1D.cuh">
       <Filter>matmul\one-dimensional</Filter>
     </ClInclude>
     <ClInclude Include="hintfile-2D.cuh">
+      <Filter>matmul\two-dimensional</Filter>
+    </ClInclude>
+    <ClInclude Include="kernel-2-2D.cuh">
+      <Filter>matmul\two-dimensional</Filter>
+    </ClInclude>
+    <ClInclude Include="kernel-3-2D.cuh">
       <Filter>matmul\two-dimensional</Filter>
     </ClInclude>
   </ItemGroup>

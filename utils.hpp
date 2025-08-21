@@ -1,12 +1,37 @@
 #pragma once
+#include <fstream>
+#include <string>
 #include <random>
+#include <filesystem>
+#include <regex>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 
+namespace fs = std::filesystem;
+
 constexpr unsigned int CEIL_DIV(const unsigned int a, const unsigned int b) {
 	return (a + b - 1) / b;
 }
+
+int getNextDirIndex(const fs::path& parentDir, const std::string& baseName) {
+	std::regex pattern(baseName + R"(_(\d+))");
+	int maxIndex = 0;
+
+	for (const auto& entry : fs::directory_iterator(parentDir)) {
+		if (entry.is_directory()) {
+			std::smatch match;
+			std::string dirname = entry.path().filename().string();
+			if (std::regex_match(dirname, match, pattern)) {
+				int index = std::stoi(match[1]);
+				if (index > maxIndex) maxIndex = index;
+			}
+		}
+	}
+
+	return maxIndex + 1;
+}
+
 
 template<size_t m, size_t n>
 void generateMatrix(float (&matrix) [m][n], const float min = 0.0f, const float max = 100.0f) noexcept {
@@ -94,12 +119,22 @@ void printMatrix(const float (&matrix)[m][n], const unsigned char w = 6U, const 
 }
 
 template<size_t M, size_t N>
-void printMatrix(const float* const matrix, const unsigned int m = M, const unsigned int n = N, const unsigned char w = 6U, const unsigned char precision = 2U) {
+inline void printMatrix(const float* const matrix, const unsigned int m = M, const unsigned int n = N, const unsigned char w = 6U, const unsigned char precision = 2U) {
 	for (unsigned int row = 0; row < m; ++row) {
 		for (unsigned int col = 0; col < n; ++col) {
-			std::cout << std::setw(w) << std::fixed << std::setprecision(precision) << matrix[row * N + col];
+			std::cout << std::setw(w) << std::fixed << std::setprecision(precision) << matrix[col * M + row];
 		}
 		std::cout << '\n';
+	}
+}
+
+template <size_t M, size_t N>
+inline void printMatrix(std::ofstream& fileStream, const float* const matrix, const unsigned int m = M, const unsigned int n = N, const unsigned char w = 6U, const unsigned char precision = 2U) {
+	for (unsigned int row = 0; row < m; ++row) {
+		for (unsigned int col = 0; col < n; ++col) {
+			fileStream << std::setw(w) << std::fixed << std::setprecision(precision) << matrix[col * M + row];
+		}
+		fileStream << '\n';
 	}
 }
 
@@ -111,4 +146,19 @@ bool AreEqualMatrices(const float* const matA, const float* const matB, const fl
 		}
 	}
 	return true;
+}
+
+template <size_t M, size_t N>
+inline void getDiff(std::ofstream& fileStream, const float* const matA, const float* const matB, const unsigned int m = M, const unsigned int n = N, const float diff = 0.0f, const unsigned char w = 6U, const unsigned char precision = 2U) {
+	for (unsigned int row = 0; row < m; ++row) {
+		for (unsigned int col = 0; col < n; ++col) {
+			if (!isNearlyEqual(matA[col * M + row], matB[col * M + row], diff)) {
+				fileStream << std::setw(w) << std::fixed << std::setprecision(precision) << std::fabs(matA[col * M + row] - matB[col * M + row]);
+			}
+			else {
+				fileStream << std::setw(w) << std::fixed << std::setprecision(precision) << 0.0f;
+			}
+		}
+		fileStream << '\n';
+	}
 }

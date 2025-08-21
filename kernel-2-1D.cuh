@@ -16,7 +16,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 	__shared__ float AS[BLOCKSIZE * BLOCKSIZE];	// Shared memory for A block
 	__shared__ float BS[BLOCKSIZE * BLOCKSIZE];	// Shared memory for B block
 
-	if constexpr (K % BLOCKSIZE == 0) {	// Simplest case where every block is a perfect fit
+	if constexpr (K % BLOCKSIZE == 0 && M == N) {	// Simplest case where every block is a perfect fit
 		float temp = 0.0f;
 		for (uint32_t k = 0; k < K; k += BLOCKSIZE) {
 
