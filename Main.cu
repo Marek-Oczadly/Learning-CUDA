@@ -104,9 +104,9 @@ int main() {
 			}
 			else {
 				std::cout << "The matrices are NOT equal.\n" << "Matrix 1: " << std::endl;
-				printMatrix<M, N>(h_C1, 48, 48, 10, 2);
+				printMatrix<M, N>(h_C1, 16, 16, 10, 2);
 				std::cout << "\nMatrix 2: " << std::endl;
-				printMatrix<M, N>(h_C2, 48, 48, 10, 2);
+				printMatrix<M, N>(h_C2, 16, 16, 10, 2);
 			}
 		}
 		else {
