@@ -13,3 +13,7 @@ enum class memory_location: uint8_t {
 constexpr uint32_t SQUARED(const uint32_t val) {
 	return val * val;
 }
+
+constexpr uint32_t MIN(const uint32_t a, const uint32_t b) {
+	return (a < b) ? a : b;
+}
