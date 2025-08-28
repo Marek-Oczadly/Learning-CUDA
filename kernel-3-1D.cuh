@@ -5,7 +5,7 @@
 template <uint32_t M, uint32_t N, uint32_t K, 
 		  uint32_t BLOCKSIZE, uint32_t TILESIZE_M, uint32_t TILESIZE_N = TILESIZE_M, 
 		  uint32_t TM = 8, uint32_t TN = TM, memory_location LOAD_INTO = memory_location::REGISTERS>
-__global__ void SGEMM(const float* __restrict A, const float* __restrict B, float* __restrict C, const float alpha = 1.0f, const float beta = 0.0f) {
+__global__ void SGEMM(const float* __restrict A, const float* __restrict B, float* const __restrict C, const float alpha = 1.0f, const float beta = 0.0f) {
 	// Square matrices of equal dimensions
 	if constexpr (TILESIZE_M == TILESIZE_N && M == N && TM == TN) {
 
@@ -31,8 +31,8 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		const uint32_t B_threadIdx_X = threadIdx.x % BLOCKTILE_LENGTH_K;
 		const uint32_t B_threadIdx_Y = threadIdx.x / BLOCKTILE_LENGTH_K;
 
-		const uint32_t threadRow = ;
-		const uint32_t threadCol = 
+		const uint32_t threadRow = threadIdx.x % TILESIZE_M;
+		const uint32_t threadCol = threadIdx.x / TILESIZE_K;
 
 		A += blockIdx.x * BLOCKTILE_LENGTH_M;
 		B += blockIdx.y * BLOCKTILE_LENGTH_N * K;
@@ -62,7 +62,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 					BS[(B_i + B_threadIdx_Y) * BLOCKTILE_LENGTH_K + B_threadIdx_X] = B[(B_i + B_threadIdx_Y) * K + B_threadIdx_Y];
 				}
 
-				__syncthreads(); // Ensure all data has been loaded into SMEM
+				syncThreads(); // Ensure all data has been loaded into SMEM
 
 				A += BLOCKTILE_LENGTH_K * M;
 				B += BLOCKTILE_LENGTH_K;
@@ -70,17 +70,38 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 				if constexpr (LOAD_INTO == memory_location::REGISTERS) {
 					for (uint32_t dotIdx = 0; dotIdx < BLOCKTILE_LENGTH_K; ++dotIdx) {
 						// Loading values into registers
-						#pragma unroll
+						{	// Limit the scope of A_pos
+							const uint32_t A_pos = threadRow * TM + BLOCKTILE_LENGTH_M * dotIdx;	// Don't have to compute this value on every iteration
+							#pragma unroll
+							for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
+								regA[TM_i] = AS[A_pos + TM_i];
+							}
+						}
+						{	// Limit the scope of B_pos
+							#pragma unroll
+							const uint32_t B_pos = TN * threadCol * BLOCKTILE_LENGTH_K + dotIdx;	// Don't have to compute this value on every iteration of i
+							for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+								regB[TN_i] = BN[TN_i * BLOCKTILE_LENGTH_K + B_pos];
+							}
+						}
 						for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
-							regA[TM_i] 
+							for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+								threadResults[TM_i + TN * TN_i]
+							}
 						}
-						#pragma unroll
-						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-							regB[TN_i]
-						}
+					}
+					syncThreads();
+				}
+			}
+			if constexpr (LOAD_INTO == memory_location::REGISTERS) {
+				for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
+					for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+						const uint32_t C_pos = 
+						C[]
 					}
 				}
 			}
+
 		}
 	}
 }

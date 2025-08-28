@@ -4,6 +4,9 @@
 
 #define OneDimensional 1
 
+// Not detected with intelliSence
+#define syncThreads() __syncthreads()
+
 enum class memory_location: uint8_t {
 	REGISTERS = 0,
 	SHARED_MEM = 1,
