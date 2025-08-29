@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 #include "utils.hpp"
-#include "kernel-2-2D.cuh"
+#include "kernel-3-1D.cuh"
 #include <cublas_v2.h>
 
 
@@ -28,7 +28,7 @@ int main() {
 	constexpr uint32_t M = dim; // Height of A and C
 	constexpr uint32_t N = dim; // Width of B and C
 	constexpr uint32_t K = dim; // Width of A and Height of B
-	constexpr uint32_t BLOCK_SIZE = 32U; // Block size for CUDA kernel
+	constexpr uint32_t BLOCK_SIZE = 16U; // Block size for CUDA kernel
 	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE);
 	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE);
 	constexpr size_t A_size = M * K * sizeof(float);
@@ -65,7 +65,7 @@ int main() {
 	#ifdef OneDimensional
 		const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
 		const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
-		SGEMM<M, N, K, BLOCK_SIZE> <<<griddim, blockDim >>> (d_A, d_B, d_C);
+		SGEMM<M, N, K, BLOCK_SIZE, BLOCK_SIZE> <<<griddim, blockDim >>> (d_A, d_B, d_C);
 		CUDA_CHECK(cudaDeviceSynchronize()); // Ensure the kernel has finished executing
 		std::cout << "SGEMM finished with grid size: " << griddim.x << " * " << griddim.y << " and block size: " << blockDim.x << std::endl;
 	#endif

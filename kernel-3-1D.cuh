@@ -7,7 +7,7 @@ template <uint32_t M, uint32_t N, uint32_t K,
 		  uint32_t TM = 8, uint32_t TN = TM, memory_location LOAD_INTO = memory_location::REGISTERS>
 __global__ void SGEMM(const float* __restrict A, const float* __restrict B, float* const __restrict C, const float alpha = 1.0f, const float beta = 0.0f) {
 	// Square matrices of equal dimensions
-	if constexpr (TILESIZE_M == TILESIZE_N && M == N && TM == TN) {
+	if constexpr (TILESIZE_M == TILESIZE_N && M == N && TM == TN && LOAD_INTO == memory_location::REGISTERS) {
 
 		// Evaluating constexprs. These are optimised at compile time and don't use up a register
 		constexpr uint32_t TILESIZE_K = TM;
@@ -23,30 +23,29 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		__shared__ float AS[BLOCKTILE_LENGTH_M * BLOCKTILE_LENGTH_K];
 		__shared__ float BS[BLOCKTILE_LENGTH_K * BLOCKTILE_LENGTH_N];
 
+		const uint32_t threadRow = threadId % TILESIZE_M;
+		const uint32_t threadCol = threadId / TILESIZE_K;
 
-		// Position of thread in each blocktile
-		const uint32_t A_threadIdx_X = threadIdx.x % BLOCKTILE_LENGTH_M;
-		const uint32_t A_threadIdx_Y = threadIdx.x / BLOCKTILE_LENGTH_M;
+		A += blockIdx_X * BLOCKTILE_LENGTH_M;
+		B += blockIdx_Y * BLOCKTILE_LENGTH_N * K;
 
-		const uint32_t B_threadIdx_X = threadIdx.x % BLOCKTILE_LENGTH_K;
-		const uint32_t B_threadIdx_Y = threadIdx.x / BLOCKTILE_LENGTH_K;
-
-		const uint32_t threadRow = threadIdx.x % TILESIZE_M;
-		const uint32_t threadCol = threadIdx.x / TILESIZE_K;
-
-		A += blockIdx.x * BLOCKTILE_LENGTH_M;
-		B += blockIdx.y * BLOCKTILE_LENGTH_N * K;
-
-		float regA[TM];
-		float regB[TM];
-
-		if constexpr (LOAD_INTO == memory_location::REGISTERS) {
-			float threadResults[TM * TN] = {};
-		}
+		float threadResults[TM * TN] = {};
+		
 
 		if constexpr (K % BLOCKTILE_LENGTH_K == 0 && M % BLOCKTILE_LENGTH_M == 0 && BLOCKTILE_AREA_A % BLOCKSIZE == 0 && BLOCKSIZE % BLOCKTILE_LENGTH_M == 0) {
+			float regA[TM];
+			float regB[TM];
+
+			// Position of thread in each blocktile
+			const uint32_t A_threadIdx_X = threadId % BLOCKTILE_LENGTH_M;
+			const uint32_t A_threadIdx_Y = threadId / BLOCKTILE_LENGTH_M;
+
+			const uint32_t B_threadIdx_X = threadId % BLOCKTILE_LENGTH_K;
+			const uint32_t B_threadIdx_Y = threadId / BLOCKTILE_LENGTH_K;
+
 			constexpr uint32_t STRIDE_A = BLOCKSIZE / BLOCKTILE_LENGTH_M;
 			constexpr uint32_t STRIDE_B = BLOCKSIZE / BLOCKTILE_LENGTH_K;
+			
 			for (uint32_t k = 0; k < K; k += BLOCKTILE_LENGTH_K) {
 				
 				// Loading data into shared memory
@@ -66,42 +65,41 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 				A += BLOCKTILE_LENGTH_K * M;
 				B += BLOCKTILE_LENGTH_K;
-
-				if constexpr (LOAD_INTO == memory_location::REGISTERS) {
-					for (uint32_t dotIdx = 0; dotIdx < BLOCKTILE_LENGTH_K; ++dotIdx) {
-						// Loading values into registers
-						{	// Limit the scope of A_pos
-							const uint32_t A_pos = threadRow * TM + BLOCKTILE_LENGTH_M * dotIdx;	// Don't have to compute this value on every iteration
-							#pragma unroll
-							for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
-								regA[TM_i] = AS[A_pos + TM_i];
-							}
-						}
-						{	// Limit the scope of B_pos
-							#pragma unroll
-							const uint32_t B_pos = TN * threadCol * BLOCKTILE_LENGTH_K + dotIdx;	// Don't have to compute this value on every iteration of i
-							for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-								regB[TN_i] = BN[TN_i * BLOCKTILE_LENGTH_K + B_pos];
-							}
-						}
+				
+				for (uint32_t dotIdx = 0; dotIdx < BLOCKTILE_LENGTH_K; ++dotIdx) {
+					// Loading values into registers
+					{	// Limit the scope of A_pos
+						const uint32_t A_pos = threadRow * TM + BLOCKTILE_LENGTH_M * dotIdx;	// Don't have to compute this value on every iteration
+						#pragma unroll
 						for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
-							for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-								threadResults[TM_i + TN * TN_i]
-							}
+							regA[TM_i] = AS[A_pos + TM_i];
 						}
 					}
-					syncThreads();
-				}
-			}
-			if constexpr (LOAD_INTO == memory_location::REGISTERS) {
-				for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
-					for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-						const uint32_t C_pos = 
-						C[]
+					{	// Limit the scope of B_pos
+						const uint32_t B_pos = TN * threadCol * BLOCKTILE_LENGTH_K + dotIdx;	// Don't have to compute this value on every iteration of i
+						#pragma unroll
+						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+							regB[TN_i] = BS[TN_i * BLOCKTILE_LENGTH_K + B_pos];
+						}
+					}
+					for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
+						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+							threadResults[TM_i + TN_i * TM] += regA[TM_i] * regB[TN_i];
+						}
 					}
 				}
+				syncThreads();
 			}
-
+		}
+		// Writing the results into C
+		if constexpr (LOAD_INTO == memory_location::REGISTERS) {
+			const uint32_t C_Block = blockIdx_X * BLOCKTILE_LENGTH_M + blockIdx_Y * BLOCKTILE_LENGTH_N * M;	// Top left position of the block
+			for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
+				for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+					const uint32_t C_pos = C_Block + (threadRow * TM + TM_i) + M * (TN_i + threadCol * TN);
+					C[0] = alpha * threadResults[TM_i + TN_i * TM] + beta * C[0];
+				}
+			}
 		}
 	}
 }
