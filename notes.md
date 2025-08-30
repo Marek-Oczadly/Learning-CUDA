@@ -16,7 +16,7 @@ This means that the theoretical peak FP32 throughput is **1920 × 1680 × 10⁶ 
 * Using these numbers we can calculate that we will need at least **(67.1 × 10⁶) / (336 × 10⁹) ≈ 0.183ms** for the memory transfers and at least **(17.2 × 10⁹) / (6.45 × 10¹²) ≈ 2.66ms** for the computation.
 Since computation takes significantly longer that memory transfers, we can assume that <u>**computation will be the bottleneck in this case.**</u>
 
-## Kernel 1 - Naive implementation [(Source code)](./naive-kernel.cuh)
+## Kernel 1 - Naive implementation [(Source code)](./kernel-1-2D.cuh)
 Each thread computes one element of the output Matrix C. For A, the row is held constant and the columns are iterated across. For B, the column is held constant and the rows are iterated across.
 ### Parameters and variables
 #### Template Parameters

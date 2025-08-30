@@ -54,19 +54,18 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 				
 				// Loading data into shared memory
 				// Loading A
-				//#pragma unroll
+				#pragma unroll
 				for (uint32_t A_i = 0; A_i < BLOCKTILE_LENGTH_K; A_i += STRIDE_A) {
+					// 0, 2, 4, 6
 
 					AS[(A_i + A_threadIdx_Y) * BLOCKTILE_LENGTH_M + A_threadIdx_X] = A[(A_i + A_threadIdx_Y) * M + A_threadIdx_X];
 				}
 
 				// Loading B
-				//#pragma unroll
+				#pragma unroll
 				for (uint32_t B_i = 0; B_i < BLOCKTILE_LENGTH_N; B_i += STRIDE_B) {
-					/*
-					B_i = 0, 32, 64, 96
-					*/
-					BS[(B_i + B_threadIdx_Y) * BLOCKTILE_LENGTH_K + B_threadIdx_X] = B[(B_i + B_threadIdx_Y) * K + B_threadIdx_X];  // Segfault occurs
+					// B_i = 0, 32, 64, 96
+					BS[(B_i + B_threadIdx_Y) * BLOCKTILE_LENGTH_K + B_threadIdx_X] = B[(B_i + B_threadIdx_Y) * K + B_threadIdx_X];
 				}
 
 				syncThreads(); // Ensure all data has been loaded into SMEM
@@ -87,12 +86,12 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 						const uint32_t B_pos = TN * threadCol * BLOCKTILE_LENGTH_K + dotIdx;	// Don't have to compute this value on every iteration of i
 						#pragma unroll
 						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-							regB[TN_i] = BS[TN_i * BLOCKTILE_LENGTH_K + B_pos];	// Segfault occurs in this line
+							regB[TN_i] = BS[TN_i * BLOCKTILE_LENGTH_K + B_pos];
 						}
 					}
 					for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
 						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-							threadResults[TM_i + TN_i * TM] += regA[TM_i] * regB[TN_i];	// no segfault but takes ages to run
+							threadResults[TM_i + TN_i * TM] += regA[TM_i] * regB[TN_i];
 						}
 					}
 				}
