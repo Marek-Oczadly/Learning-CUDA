@@ -28,12 +28,19 @@ int main() {
 	constexpr uint32_t M = dim; // Height of A and C
 	constexpr uint32_t N = dim; // Width of B and C
 	constexpr uint32_t K = dim; // Width of A and Height of B
-	constexpr uint32_t BLOCK_SIZE = 16U; // Block size for CUDA kernel
-	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE);
-	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE);
 	constexpr size_t A_size = M * K * sizeof(float);
 	constexpr size_t B_size = K * N * sizeof(float);
 	constexpr size_t C_size = M * N * sizeof(float);
+
+#ifdef BLOCKTILED
+	constexpr uint32_t BLOCK_SIZE = 16U; // Block size for CUDA kernel
+	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE * 8);
+	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE * 8);
+#else
+	constexpr uint32_t BLOCK_SIZE = 32U;
+	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE);
+	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE);
+#endif
 
 	const float alpha = 1.0f;
 	const float beta = 0.0f;
@@ -65,9 +72,10 @@ int main() {
 	#ifdef OneDimensional
 		const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
 		const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
-		SGEMM<M, N, K, BLOCK_SIZE, BLOCK_SIZE> <<<griddim, blockDim >>> (d_A, d_B, d_C);
+		std::cout << "SGEMM launched with grid size: " << griddim.x << " * " << griddim.y << " and block size: " << blockDim.x << std::endl;
+		SGEMM<M, N, K, BLOCK_SIZE> <<<griddim, blockDim >>> (d_A, d_B, d_C);
 		CUDA_CHECK(cudaDeviceSynchronize()); // Ensure the kernel has finished executing
-		std::cout << "SGEMM finished with grid size: " << griddim.x << " * " << griddim.y << " and block size: " << blockDim.x << std::endl;
+		std::cout << "SGEMM finished" << std::endl;
 	#endif
 
 	#ifdef TwoDimensional
