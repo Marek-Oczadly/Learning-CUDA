@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 #include "utils.hpp"
-#include "kernel-3-1D.cuh"
+#include "kernel-4-1D.cuh"
 #include <cublas_v2.h>
 
 
