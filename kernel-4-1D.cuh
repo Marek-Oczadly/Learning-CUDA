@@ -112,10 +112,20 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		// Writing the results into C
 		if constexpr (LOAD_INTO == memory_location::REGISTERS) {
 			const uint32_t C_Block = blockIdx_X * BLOCKTILE_LENGTH_M + blockIdx_Y * BLOCKTILE_LENGTH_N * M;	// Top left position of the block
-			for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
+			for (uint32_t TM_i = 0; TM_i < TM; TM_i+=4) {
 				for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+					
 					const uint32_t C_pos = C_Block + (threadRow * TM + TM_i) + M * (TN_i + threadCol * TN);
-					C[C_pos] = alpha * threadResults[TM_i + TN_i * TM] + beta * C[C_pos];
+					const uint32_t results_pos = TM_i + TN_i * TM;
+
+					float4 temp = reinterpret_cast<float4*>(&C[C_pos])[0];
+
+					temp.x = alpha * threadResults[results_pos    ] + beta * temp.x;
+					temp.y = alpha * threadResults[results_pos + 1] + beta * temp.y;
+					temp.z = alpha * threadResults[results_pos + 2] + beta * temp.z;
+					temp.w = alpha * threadResults[results_pos + 3] + beta * temp.w;
+
+					reinterpret_cast<float4*>(&C[C_pos])[0] = temp;
 				}
 			}
 		}
