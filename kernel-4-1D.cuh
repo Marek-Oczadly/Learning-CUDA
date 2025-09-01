@@ -62,7 +62,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 				// Loading data into shared memory
 				// Loading A
-				//#pragma unroll	// Likely very few iterations - 1 or 2 at most
+				#pragma unroll	// Likely very few iterations - 1 or 2 at most
 				for (uint32_t i = 0; i < BLOCKTILE_LENGTH_M; i += STRIDE) {
 				
 					reinterpret_cast<float4*>(&AS[(i + A_threadIdx_Y) * BLOCKTILE_LENGTH_M + 4 * A_threadIdx_X])[0] = 
@@ -88,14 +88,14 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 					// Loading values into registers
 					{	// Limit the scope of A_pos to free a register
 						const uint32_t A_pos = threadRow * TM + BLOCKTILE_LENGTH_M * dotIdx;	// Don't have to compute this value on every iteration
-						//#pragma unroll
+						#pragma unroll
 						for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
 							regA[TM_i] = AS[A_pos + TM_i];
 						}
 					}
 					{	// Limit the scope of B_pos to free a register
 						const uint32_t B_pos = threadCol * TN + BLOCKTILE_LENGTH_N * dotIdx;	// Don't have to compute this value on every iteration of i
-						//#pragma unroll
+						#pragma unroll
 						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
 							regB[TN_i] = BS[B_pos + TN_i];
 						}
@@ -112,6 +112,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		// Writing the results into C
 		if constexpr (LOAD_INTO == memory_location::REGISTERS) {
 			const uint32_t C_Block = blockIdx_X * BLOCKTILE_LENGTH_M + blockIdx_Y * BLOCKTILE_LENGTH_N * M;	// Top left position of the block
+			#pragma unroll
 			for (uint32_t TM_i = 0; TM_i < TM; TM_i+=4) {
 				for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
 					
