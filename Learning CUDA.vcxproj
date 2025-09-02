@@ -91,6 +91,7 @@
     <ClInclude Include="kernel-1-2D.cuh" />
     <ClInclude Include="kernel-2-1D.cuh" />
     <ClInclude Include="kernel-4-1D.cuh" />
+    <ClInclude Include="kernel-5-1D.cuh" />
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,5 @@
 #pragma once
 #include "hintfile-1D.cuh"
-#include <cstdio>
 
 #define BLOCKTILED 1
 

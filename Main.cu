@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 #include "utils.hpp"
-#include "kernel-4-1D.cuh"
+#include "kernel-3-1D.cuh"
 #include <cublas_v2.h>
 
 
@@ -19,7 +19,7 @@ inline void checkCudaError(cudaError_t error, const char* function, const char* 
 #define CUDA_CHECK(x) checkCudaError(x, #x, __FILE__, __LINE__)
 
 constexpr bool iscuBLAS = false; // Set to true to use cuBLAS, false to use custom SGEMM kernel
-constexpr bool checkIfWorks = true;	// Set to true to check if the SGEMM works correctly by comparing it with cuBLAS
+constexpr bool checkIfWorks = false;	// Set to true to check if the SGEMM works correctly by comparing it with cuBLAS
 constexpr uint32_t dim = 2048U;	// Size of the matrices (dim x dim)
 
 int main() {

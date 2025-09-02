@@ -29,6 +29,9 @@
     <ClInclude Include="kernel-4-1D.cuh">
       <Filter>matmul\one-dimensional</Filter>
     </ClInclude>
+    <ClInclude Include="kernel-5-1D.cuh">
+      <Filter>matmul\one-dimensional</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="matmul">
