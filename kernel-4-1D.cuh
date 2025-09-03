@@ -21,10 +21,6 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		constexpr uint32_t BLOCKTILE_LENGTH_N = TILESIZE_N * TN;	// Tile size in the N dimension
 		constexpr uint32_t BLOCKTILE_LENGTH_K = TILESIZE_K;			// Tile size in the K dimension
 
-		constexpr uint32_t BLOCKTILE_AREA_A = BLOCKTILE_LENGTH_M * BLOCKTILE_LENGTH_K;
-		constexpr uint32_t BLOCKTILE_AREA_B = BLOCKTILE_LENGTH_N * BLOCKTILE_LENGTH_K;
-		constexpr uint32_t BLOCKTILE_AREA_C = BLOCKTILE_LENGTH_M * BLOCKTILE_LENGTH_N;	// Size of the tile block in C
-
 		constexpr uint32_t BLOCKSIZE = BLOCKDIM * BLOCKDIM;
 
 
