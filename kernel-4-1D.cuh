@@ -36,7 +36,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		float threadResults[TM * TN] = {};
 
 
-		if constexpr (K % BLOCKTILE_LENGTH_K == 0 && M % BLOCKTILE_LENGTH_M == 0 && BLOCKTILE_AREA_A % BLOCKSIZE == 0 && BLOCKSIZE % BLOCKTILE_LENGTH_M == 0) {
+		if constexpr (K % BLOCKTILE_LENGTH_K == 0 && M % BLOCKTILE_LENGTH_M == 0 && BLOCKSIZE % BLOCKTILE_LENGTH_M == 0) {
 			float regA[TM];
 			float regB[TM];
 
