@@ -142,10 +142,10 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 	const uint32_t C_Block = blockIdx_X * BLOCKTILE_LENGTH_M + (blockIdx_Y * BLOCKTILE_LENGTH_N + warpIdx_Y * WARP_TILE_LENGTH_N) * M + (warpIdx_X * WARP_TILE_LENGTH_M);
 	for (uint32_t warp_m = 0; warp_m < THREADDIM_M; warp_m += TM) {		// Nesting hell
 		for (uint32_t warp_n = 0; warp_n < THREADDIM_N; warp_n += TN) {
-			const uint32_t C_Warp_Subtile = C_Block + THREADTILES_PER_SUBTILE_M * warp_m + warp_n * K * THREADTILES_PER_SUBTILE_N;
+			const uint32_t C_Warp_Subtile = C_Block + THREADTILES_PER_SUBTILE_M * warp_m + warp_n * M * THREADTILES_PER_SUBTILE_N;
 			uint32_t reg_Pos = warp_m + warp_n * THREADDIM_M;
 			for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-				const uint32_t C_pos0 = C_Warp_Subtile + TN_i * K;
+				const uint32_t C_pos0 = C_Warp_Subtile + M * (warpThreadIdx_Y * TN + TN_i) + warpThreadIdx_X * TM;
 				reg_Pos += THREADDIM_M;
 				for (uint32_t TM_i = 0; TM_i < TM; TM_i += 4) {
 					const uint32_t C_pos = C_pos0 + TM_i;
