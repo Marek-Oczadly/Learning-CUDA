@@ -102,6 +102,7 @@
     <CudaCompile>
       <GenerateLineInfo>true</GenerateLineInfo>
       <AdditionalOptions>-std=c++20 -Xcompiler -rdynamic %(AdditionalOptions)</AdditionalOptions>
+      <Defines>CONFIG_SANITIZER</Defines>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

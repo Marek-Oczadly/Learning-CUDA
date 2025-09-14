@@ -19,7 +19,13 @@ inline void static checkCudaError(cudaError_t error, const char* function, const
 #define CUDA_CHECK(x) checkCudaError(x, #x, __FILE__, __LINE__)
 
 constexpr bool iscuBLAS = false; // Set to true to use cuBLAS, false to use custom SGEMM kernel
+
+#if defined(_DEBUG)
 constexpr bool checkIfWorks = true;	// Set to true to check if the SGEMM works correctly by comparing it with cuBLAS
+#else
+constexpr bool checkIfWorks = false;
+#endif
+
 constexpr uint32_t dim = 2048U;	// Size of the matrices (dim x dim)
 
 int main() {
