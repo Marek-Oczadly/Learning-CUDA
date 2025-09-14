@@ -5,7 +5,7 @@
 
 
 // Add this helper function at the top of your file after the includes
-inline void checkCudaError(cudaError_t error, const char* function, const char* file, int line) {
+inline void static checkCudaError(cudaError_t error, const char* function, const char* file, int line) {
 	if (error != cudaSuccess) {
 		std::cerr << "CUDA error in " << file << ":" << line << " (" << function << ") : "
 			<< cudaGetErrorString(error) << std::endl;

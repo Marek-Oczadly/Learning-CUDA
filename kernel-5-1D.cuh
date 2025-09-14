@@ -68,14 +68,14 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		for (uint32_t k = 0; k < K; k += BLOCKTILE_LENGTH_K) {
 			{ // Loading data into SMEM
 
-				//#pragma unroll	// Loading A
+				#pragma unroll	// Loading A
 				for (uint32_t A_i = 0; A_i < BLOCKTILE_LENGTH_K; A_i += STRIDE_A) {
 					const uint32_t TIDY = A_i + A_threadIdx_Y;
 					reinterpret_cast<float4*>(&AS[TIDY * BLOCKTILE_LENGTH_M + A_threadIdx_X])[0] = 
 						reinterpret_cast<const float4*>(&A[TIDY * M + A_threadIdx_X])[0];
 				}
 				
-				//#pragma unroll	// Loading B
+				#pragma unroll	// Loading B
 				for (uint32_t B_i = 0; B_i < BLOCKTILE_LENGTH_N; B_i += STRIDE_B) {
 					const uint32_t TIDY = B_i + B_threadIdx_Y;
 					const float4 temp = reinterpret_cast<const float4*>(&B[TIDY * K + B_threadIdx_X])[0];
@@ -103,7 +103,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 				// LOADING DATA INTO REGISTERS
 				// Loading data into regM
-				//#pragma unroll
+				#pragma unroll
 				for (uint32_t warp_m = 0; warp_m < WARP_SUBTILES; ++warp_m) {
 					const uint32_t pos = dotIdx * BLOCKTILE_LENGTH_M + warpIdx_X * WARP_TILE_LENGTH_M + warp_m * WARP_SUBTILE_LENGTH_M + warpThreadIdx_X * TM;
 					for (uint32_t i = 0; i < TM; ++i) {
@@ -112,7 +112,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 				}
 
 				// Loading data into regN
-				//#pragma unroll
+				#pragma unroll
 				for (uint32_t warp_n = 0; warp_n < WARP_SUBTILES; ++warp_n) {
 					const uint32_t pos = dotIdx * BLOCKTILE_LENGTH_N + warpIdx_Y * WARP_TILE_LENGTH_N + warp_n * WARP_SUBTILE_LENGTH_N + warpThreadIdx_Y * TN;
 					for (uint32_t i = 0; i < TN; ++i) {
@@ -125,6 +125,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 					for (uint32_t warp_n = 0; warp_n < THREADDIM_N; warp_n += TN) {
 						uint32_t pos = warp_m + warp_n * THREADDIM_M;
 						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
+							#pragma unroll
 							for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
 								threadResults[pos + TM_i] += regM[warp_m + TM_i] * regN[warp_n + TN_i];
 							}
@@ -146,7 +147,6 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 	const uint32_t C_Block = blockIdx_X * BLOCKTILE_LENGTH_M + (blockIdx_Y * BLOCKTILE_LENGTH_N + warpIdx_Y * WARP_TILE_LENGTH_N) * M + (warpIdx_X * WARP_TILE_LENGTH_M);
 	for (uint32_t warp_m = 0; warp_m < THREADDIM_M; warp_m += TM) {		// Nesting hell
-		
 		for (uint32_t warp_n = 0; warp_n < THREADDIM_N; warp_n += TN) {
 
 			const uint32_t C_Warp_Subtile = C_Block + THREADTILES_PER_SUBTILE_M * warp_m + warp_n * M * THREADTILES_PER_SUBTILE_N;
@@ -155,7 +155,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 			for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
 
 				const uint32_t C_pos0 = C_Warp_Subtile + M * (warpThreadIdx_Y * TN + TN_i) + warpThreadIdx_X * TM;
-
+				#pragma unroll
 				for (uint32_t TM_i = 0; TM_i < TM; TM_i += 4) {
 
 					const uint32_t C_pos = C_pos0 + TM_i;
