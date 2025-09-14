@@ -32,12 +32,19 @@ int main() {
 	constexpr size_t B_size = K * N * sizeof(float);
 	constexpr size_t C_size = M * N * sizeof(float);
 
-#ifdef BLOCKTILED
+#if defined(BLOCKTILED)
 	constexpr uint32_t BLOCK_SIZE = 16U; // Block size for CUDA kernel
+	const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
 	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE * 8);
 	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE * 8);
+#elif defined(WARPTILED)
+	const dim3 blockDim(16 * 16);
+	constexpr uint32_t BLOCK_SIZE = 16;
+	constexpr uint32_t GRID_SIZE_X = 16;
+	constexpr uint32_t GRID_SIZE_Y = 16;
 #else
 	constexpr uint32_t BLOCK_SIZE = 32U;
+	const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
 	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE);
 	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE);
 #endif
@@ -70,7 +77,6 @@ int main() {
 	}
 
 	#ifdef OneDimensional
-		const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
 		const dim3 griddim(GRID_SIZE_X, GRID_SIZE_Y);
 		std::cout << "SGEMM launched with grid size: " << griddim.x << " * " << griddim.y << " and block size: " << blockDim.x << std::endl;
 		SGEMM<M, N, K, BLOCK_SIZE> <<<griddim, blockDim >>> (d_A, d_B, d_C);
