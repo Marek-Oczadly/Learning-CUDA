@@ -5,22 +5,17 @@
 
 
 
-template <uint32_t M, uint32_t N, uint32_t K, uint32_t BLOCKDIM,
-	uint32_t WARP_SUBTILES = 2U, uint32_t WARP_TILES_M = 2U, uint32_t TM = 4U, uint32_t TN = TM,
+template <uint32_t M, uint32_t N, uint32_t K, uint32_t BLOCKSIZE, uint32_t BLOCKTILE_LENGTH_M = 128, uint32_t BLOCKTILE_LENGTH_N = 64, 
+	uint32_t BLOCKTILE_LENGTH_K = 8, uint32_t WARP_SUBTILES = 2U, uint32_t WARP_TILES_M = 2U, uint32_t TM = 4U, uint32_t TN = TM,
 	memory_location LOAD_INTO = memory_location::REGISTERS, uint32_t WARPSIZE = 32U>
 __global__ void SGEMM(const float* __restrict A, const float* __restrict B, float* const __restrict C, const float alpha = 1.0f, const float beta = 0.0f) {
 
-	constexpr uint32_t BLOCKSIZE = BLOCKDIM * BLOCKDIM;
-
 	// BLOCKTILE SIZES
-	constexpr uint32_t BLOCKTILE_LENGTH_M = TM * BLOCKDIM * 2;
-	constexpr uint32_t BLOCKTILE_LENGTH_N = TN * BLOCKDIM * 2;
-	constexpr uint32_t BLOCKTILE_LENGTH_K = TM * WARP_SUBTILES;
 	constexpr uint32_t SHAREDMEM_LENGTH_M = BLOCKTILE_LENGTH_M + 4;
 	constexpr uint32_t SHAREDMEM_LENGTH_N = BLOCKTILE_LENGTH_N + 4;
 
 
-	constexpr uint32_t WARP_TILES_N = (BLOCKDIM * BLOCKDIM) / (WARPSIZE * WARP_TILES_M);
+	constexpr uint32_t WARP_TILES_N = (BLOCKSIZE) / (WARPSIZE * WARP_TILES_M);
 
 	// WARP TILE SIZES
 	constexpr uint32_t WARP_TILE_LENGTH_M = BLOCKTILE_LENGTH_M / WARP_TILES_M;
@@ -110,8 +105,9 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 				#pragma unroll
 				for (uint32_t warp_m = 0; warp_m < WARP_SUBTILES; ++warp_m) {
 					const uint32_t pos = dotIdx * SHAREDMEM_LENGTH_M + warpIdx_X * WARP_TILE_LENGTH_M + warp_m * WARP_SUBTILE_LENGTH_M + warpThreadIdx_X * TM;
+					const uint32_t regPos = warp_m * TM;
 					for (uint32_t i = 0; i < TM; ++i) {
-						regM[warp_m * TM + i] = AS[pos + i];
+						regM[regPos + i] = AS[pos + i];
 					}
 				}
 
@@ -119,8 +115,9 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 				#pragma unroll
 				for (uint32_t warp_n = 0; warp_n < WARP_SUBTILES; ++warp_n) {
 					const uint32_t pos = dotIdx * SHAREDMEM_LENGTH_N + warpIdx_Y * WARP_TILE_LENGTH_N + warp_n * WARP_SUBTILE_LENGTH_N + warpThreadIdx_Y * TN;
+					const uint32_t regPos = regN * TN;
 					for (uint32_t i = 0; i < TN; ++i) {
-						regN[warp_n * TN + i] = BS[pos + i];
+						regN[regPos + i] = BS[pos + i];
 					}
 				}
 
@@ -166,7 +163,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 					const uint32_t results_pos = reg_Pos + TM_i;
 					float4 temp = reinterpret_cast<const float4*>(&C[C_pos])[0];
 
-					temp.x = alpha * threadResults[results_pos] + beta * temp.x;
+					temp.x = alpha * threadResults[results_pos	  ] + beta * temp.x;
 					temp.y = alpha * threadResults[results_pos + 1] + beta * temp.y;
 					temp.z = alpha * threadResults[results_pos + 2] + beta * temp.z;
 					temp.w = alpha * threadResults[results_pos + 3] + beta * temp.w;

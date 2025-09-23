@@ -44,10 +44,10 @@ int main() {
 	constexpr uint32_t GRID_SIZE_X = CEIL_DIV(N, BLOCK_SIZE * 8);
 	constexpr uint32_t GRID_SIZE_Y = CEIL_DIV(M, BLOCK_SIZE * 8);
 #elif defined(WARPTILED)
-	const dim3 blockDim(16 * 16);
-	constexpr uint32_t BLOCK_SIZE = 16;
+	const dim3 blockDim(128);
+	constexpr uint32_t BLOCK_SIZE = 128;
 	constexpr uint32_t GRID_SIZE_X = 16;
-	constexpr uint32_t GRID_SIZE_Y = 16;
+	constexpr uint32_t GRID_SIZE_Y = 32;
 #else
 	constexpr uint32_t BLOCK_SIZE = 32U;
 	const dim3 blockDim(BLOCK_SIZE * BLOCK_SIZE);
