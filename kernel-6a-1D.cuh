@@ -4,6 +4,47 @@
 #define WARPTILED 1
 
 
+template <
+	uint32_t BLOCKSIZE, uint32_t BLOCKTILE_A_SIZE, uint32_t BLOCKTILE_B_SIZE, uint32_t M, uint32_t N, uint32_t K, 
+	uint32_t BLOCKTILE_LENGTH_K, uint32_t BLOCKTILE_LENGTH_M, uint32_t BLOCKTILE_LENGTH_N, uint8_t NUM_BUFFERS = 2
+>
+__device__ __forceinline void loadData(
+	const float* const __restrict& A, const float* const __restrict& B, float (&AS)[NUM_BUFFERS][BLOCKTILE_A_SIZE], float(&BS)[NUM_BUFFERS][BLOCKTILE_B_SIZE],
+	const uint32_t& A_threadIdx_X, const uint32_t& B_threadIdx_X, const uint32_t& A_threadIdx_Y, const uint32_t& B_threadIdx_Y, const uint8_t& buffer
+) {
+	// INCLUDES EXTRA BYTE TO SHIFT ALIGNMENT
+	constexpr uint32_t SHAREDMEM_LENGTH_M = BLOCKTILE_A_SIZE / BLOCKTILE_LENGTH_K;
+	constexpr uint32_t SHAREDMEM_LENGTH_N = BLOCKTILE_B_SIZE / BLOCKTILE_LENGTH_K;
+
+	constexpr uint32_t STRIDE_A = 4 * BLOCKSIZE / BLOCKTILE_LENGTH_M;
+	constexpr uint32_t STRIDE_B = 4 * BLOCKSIZE / BLOCKTILE_LENGTH_K;
+
+	#pragma unroll	// Loading A
+	for (uint32_t A_i = 0; A_i < BLOCKTILE_LENGTH_K; A_i += STRIDE_A) {
+		const uint32_t TIDY = A_i + A_threadIdx_Y;
+		reinterpret_cast<float4*>(&AS[buffer][TIDY * SHAREDMEM_LENGTH_M + A_threadIdx_X])[0] =
+			reinterpret_cast<const float4*>(&A[TIDY * M + A_threadIdx_X])[0];
+	}
+	#pragma unroll	// Loading B
+	for (uint32_t B_i = 0; B_i < BLOCKTILE_LENGTH_N; B_i += STRIDE_B) {
+		const uint32_t TIDY = B_i + B_threadIdx_Y;
+		const float4 temp = reinterpret_cast<const float4*>(&B[TIDY * K + B_threadIdx_X])[0];
+
+
+		uint32_t position = B_threadIdx_X * SHAREDMEM_LENGTH_N + TIDY;
+
+		// transposing B
+		BS[buffer][position] = temp.x;
+		position += SHAREDMEM_LENGTH_N;
+		BS[buffer][position] = temp.y;	
+		position += SHAREDMEM_LENGTH_N;
+		BS[buffer][position] = temp.z;	
+		position += SHAREDMEM_LENGTH_N;
+		BS[buffer][position] = temp.w;	// For some stupid reason w is the last variable in float 4?? Pisses me off
+	}
+
+}
+
 
 template <uint32_t M, uint32_t N, uint32_t K, uint32_t BLOCKSIZE, uint32_t BLOCKTILE_LENGTH_M = 128, uint32_t BLOCKTILE_LENGTH_N = 64, 
 	uint32_t BLOCKTILE_LENGTH_K = 8, uint32_t WARP_SUBTILES = 2U, uint32_t WARP_TILES_M = 2U, uint32_t TM = 4U, uint32_t TN = TM,
@@ -44,8 +85,10 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 	float threadResults[TM * TN * WARP_SUBTILES * WARP_SUBTILES] = {};	// Initialise values to 0
 
-	__shared__ float AS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
-	__shared__ float BS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
+	__shared__ float AS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
+	__shared__ float BS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
+
+	uint8_t buffer_num = 0;
 
 	A += blockIdx_X * BLOCKTILE_LENGTH_M;
 	B += blockIdx_Y * BLOCKTILE_LENGTH_N * K;
@@ -65,33 +108,10 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		const uint32_t B_threadIdx_Y = threadId / K_OVER_4;
 
 		for (uint32_t k = 0; k < K; k += BLOCKTILE_LENGTH_K) {
-			{ // Loading data into SMEM
-
-				#pragma unroll	// Loading A
-				for (uint32_t A_i = 0; A_i < BLOCKTILE_LENGTH_K; A_i += STRIDE_A) {
-					const uint32_t TIDY = A_i + A_threadIdx_Y;
-					reinterpret_cast<float4*>(&AS[TIDY * SHAREDMEM_LENGTH_M + A_threadIdx_X])[0] =
-						reinterpret_cast<const float4*>(&A[TIDY * M + A_threadIdx_X])[0];
-				}
-
-				#pragma unroll	// Loading B
-				for (uint32_t B_i = 0; B_i < BLOCKTILE_LENGTH_N; B_i += STRIDE_B) {
-					const uint32_t TIDY = B_i + B_threadIdx_Y;
-					const float4 temp = reinterpret_cast<const float4*>(&B[TIDY * K + B_threadIdx_X])[0];
-
-
-					uint32_t position = B_threadIdx_X * SHAREDMEM_LENGTH_N + TIDY;
-
-					// transposing B
-					BS[position] = temp.x;	// RACE A
-					position += SHAREDMEM_LENGTH_N;
-					BS[position] = temp.y;	// RACE A
-					position += SHAREDMEM_LENGTH_N;
-					BS[position] = temp.z;	// RACE A
-					position += SHAREDMEM_LENGTH_N;
-					BS[position] = temp.w;	// For some stupid reason w is the last variable in float 4?? Pisses me off
-				}
-			}
+			loadData<
+				BLOCKSIZE, BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M, SHAREDMEM_LENGTH_N * BLOCKTILE_LENGTH_K, M, N, K, BLOCKTILE_LENGTH_K, BLOCKTILE_LENGTH_M, BLOCKTILE_LENGTH_N>(
+					A, B, AS, BS, A_threadIdx_X, B_threadIdx_X, A_threadIdx_Y, B_threadIdx_Y, 0
+				);
 
 			syncThreads();	// Ensure all data has been loaded into SMEM
 
@@ -107,7 +127,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 					const uint32_t pos = dotIdx * SHAREDMEM_LENGTH_M + warpIdx_X * WARP_TILE_LENGTH_M + warp_m * WARP_SUBTILE_LENGTH_M + warpThreadIdx_X * TM;
 					const uint32_t regPos = warp_m * TM;
 					for (uint32_t i = 0; i < TM; ++i) {
-						regM[regPos + i] = AS[pos + i];
+						regM[regPos + i] = AS[0][pos + i];
 					}
 				}
 
@@ -115,9 +135,9 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 				#pragma unroll
 				for (uint32_t warp_n = 0; warp_n < WARP_SUBTILES; ++warp_n) {
 					const uint32_t pos = dotIdx * SHAREDMEM_LENGTH_N + warpIdx_Y * WARP_TILE_LENGTH_N + warp_n * WARP_SUBTILE_LENGTH_N + warpThreadIdx_Y * TN;
-					const uint32_t regPos = regN * TN;
+					const uint32_t regPos = warp_n * TN;
 					for (uint32_t i = 0; i < TN; ++i) {
-						regN[regPos + i] = BS[pos + i];
+						regN[regPos + i] = BS[0][pos + i];
 					}
 				}
 
