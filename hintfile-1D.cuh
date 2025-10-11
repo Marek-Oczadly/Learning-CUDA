@@ -16,6 +16,7 @@ enum class memory_location: uint8_t {
 	GLOBAL_MEM = 2
 };
 
+
 template <
 	uint32_t BLOCKSIZE, uint32_t BLOCKTILE_A_SIZE, uint32_t BLOCKTILE_B_SIZE, uint32_t M, uint32_t N, uint32_t K,
 	uint32_t BLOCKTILE_LENGTH_K, uint32_t BLOCKTILE_LENGTH_M, uint32_t BLOCKTILE_LENGTH_N, uint8_t NUM_BUFFERS = 2
@@ -57,6 +58,7 @@ __device__ __forceinline void loadSMEMTile(
 	}
 }
 
+
 template<
 	uint32_t BLOCKSIZE, uint32_t BLOCKTILE_A_SIZE, uint32_t BLOCKTILE_B_SIZE, uint32_t M, uint32_t N, uint32_t K,
 	uint32_t BLOCKTILE_LENGTH_K, uint32_t BLOCKTILE_LENGTH_M, uint32_t BLOCKTILE_LENGTH_N
@@ -94,6 +96,25 @@ __device__ __forceinline void loadSMEMTile(
 		BS[position] = temp.z;
 		position += SHAREDMEM_LENGTH_N;
 		BS[position] = temp.w;	// For some stupid reason w is the last variable in float 4?? Pisses me off
+	}
+}
+
+
+template <
+	uint32_t SMEM_LENGTH, uint32_t WARPTILE_LENGTH, uint32_t WARP_SUBTILE_LENGTH, uint32_t THREADTILE_SIZE, 
+	uint32_t WARP_SUBTILES, uint32_t NUM_BUFFERS, uint32_t SMEM_SIZE
+>
+__device__ __forceinline void loadRegisterFile(
+	float (&registerFile)[THREADTILE_SIZE * WARP_SUBTILES], const float (&SMEM)[NUM_BUFFERS][SMEM_SIZE], const uint32_t& dotIdx,
+	const uint32_t& warpIdx, const uint32_t& warpThreadIdx, const uint8_t& buffer_num 
+) {
+	#pragma unroll
+	for (uint32_t warp_subtile = 0; warp_subtile < WARP_SUBTILES; ++warp_subtile) {
+		const uint32_t pos = dotIdx * SMEM_LENGTH + warpIdx * WARPTILE_LENGTH + warp_subtile * WARP_SUBTILE_LENGTH + warpThreadIdx * THREADTILE_SIZE;
+		const uint32_t regPos = warp_subtile * THREADTILE_SIZE;
+		for (uint32_t i = 0; i < THREADTILE_SIZE; ++i) {
+			registerFile[regPos + i] = SMEM[buffer_num][pos + i];
+		}
 	}
 }
 
