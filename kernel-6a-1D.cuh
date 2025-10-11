@@ -5,9 +5,13 @@
 
 
 #if !defined(loadBlock)
-#define loadBlock() loadData<																																	 \
+#define loadBlock() loadSMEMTile<																																	 \
 BLOCKSIZE, BLOCKTILE_LENGTH_K* SHAREDMEM_LENGTH_M, SHAREDMEM_LENGTH_N* BLOCKTILE_LENGTH_K, M, N, K, BLOCKTILE_LENGTH_K, BLOCKTILE_LENGTH_M, BLOCKTILE_LENGTH_N>( \
 	A, B, AS, BS, A_threadIdx_X, B_threadIdx_X, A_threadIdx_Y, B_threadIdx_Y, buffer_num)
+#endif
+
+#if !defined(calcResults)
+#define calcResults() calculate_warptiled_MMA<THREADDIM_M, THREADDIM_N, TM, TN>(regM, regN, threadResults)
 #endif
 
 
@@ -53,7 +57,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 	__shared__ float AS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
 	__shared__ float BS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
 
-	const uint8_t buffer_num = 0;
+	uint8_t buffer_num = 0;
 
 	A += blockIdx_X * BLOCKTILE_LENGTH_M;
 	B += blockIdx_Y * BLOCKTILE_LENGTH_N * K;
@@ -104,18 +108,7 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 				}
 
 				// Calculating the results
-				for (uint32_t warp_m = 0; warp_m < THREADDIM_M; warp_m += TM) {		// Nesting hell
-					for (uint32_t warp_n = 0; warp_n < THREADDIM_N; warp_n += TN) {
-						uint32_t pos = warp_m + warp_n * THREADDIM_M;
-						for (uint32_t TN_i = 0; TN_i < TN; ++TN_i) {
-							#pragma unroll
-							for (uint32_t TM_i = 0; TM_i < TM; ++TM_i) {
-								threadResults[pos + TM_i] += regM[warp_m + TM_i] * regN[warp_n + TN_i];
-							}
-							pos += THREADDIM_M;
-						}
-					}
-				}
+				calcResults();
 			}
 
 			A += BLOCKTILE_LENGTH_K * M;
