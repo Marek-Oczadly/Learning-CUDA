@@ -118,6 +118,24 @@ __device__ __forceinline void loadRegisterFile(
 	}
 }
 
+template <
+	uint32_t SMEM_LENGTH, uint32_t WARPTILE_LENGTH, uint32_t WARP_SUBTILE_LENGTH, uint32_t THREADTILE_SIZE,
+	uint32_t WARP_SUBTILES, uint32_t SMEM_SIZE
+> 
+__device__ __forceinline void loadRegisterFile(
+	float(&registerFile)[THREADTILE_SIZE * WARP_SUBTILES], const float(&SMEM)[SMEM_SIZE], const uint32_t& dotIdx,
+	const uint32_t& warpIdx, const uint32_t& warpThreadIdx
+) {
+#pragma unroll
+	for (uint32_t warp_subtile = 0; warp_subtile < WARP_SUBTILES; ++warp_subtile) {
+		const uint32_t pos = dotIdx * SMEM_LENGTH + warpIdx * WARPTILE_LENGTH + warp_subtile * WARP_SUBTILE_LENGTH + warpThreadIdx * THREADTILE_SIZE;
+		const uint32_t regPos = warp_subtile * THREADTILE_SIZE;
+		for (uint32_t i = 0; i < THREADTILE_SIZE; ++i) {
+			registerFile[regPos + i] = SMEM[pos + i];
+		}
+	}
+}
+
 template <uint32_t REGFILEDIM_M, uint32_t REGFILEDIM_N, uint32_t TM, uint32_t TN>
 __device__ __forceinline void calculate_warptiled_MMA(const float (&regM)[REGFILEDIM_M], const float (&regN)[REGFILEDIM_N], float (&results)[REGFILEDIM_M * REGFILEDIM_N]) {
 	for (uint32_t warp_m = 0; warp_m < REGFILEDIM_M; warp_m += TM) {		// Nesting hell

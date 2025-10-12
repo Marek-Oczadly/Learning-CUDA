@@ -2,22 +2,40 @@
 #include "hintfile-1D.cuh"
 
 #define WARPTILED 1
+//#define BUFFERED 1
 
 
+#if defined(BUFFERED)
 #if !defined(loadBlock)
 #define loadBlock() loadSMEMTile<																																	 \
 BLOCKSIZE, BLOCKTILE_LENGTH_K* SHAREDMEM_LENGTH_M, SHAREDMEM_LENGTH_N* BLOCKTILE_LENGTH_K, M, N, K, BLOCKTILE_LENGTH_K, BLOCKTILE_LENGTH_M, BLOCKTILE_LENGTH_N>( \
 	A, B, AS, BS, A_threadIdx_X, B_threadIdx_X, A_threadIdx_Y, B_threadIdx_Y, buffer_num)
 #endif
 
-#if !defined(calcResults)
-#define calcResults() calculate_warptiled_MMA<THREADDIM_M, THREADDIM_N, TM, TN>(regM, regN, threadResults)
-#endif
-
 #if !defined(loadRegisters)
 #define loadRegisters(ID, SMEM) loadRegisterFile< \
 SHAREDMEM_LENGTH_##ID, WARP_TILE_LENGTH_##ID, WARP_SUBTILE_LENGTH_##ID, T##ID, WARP_SUBTILES, 2, BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_##ID>( \
 	reg##ID, SMEM, dotIdx, warpIdx_##ID, warpThreadIdx_##ID, buffer_num)
+#endif
+
+#else
+
+#if !defined(loadBlock)
+#define loadBlock() loadSMEMTile<																																	 \
+BLOCKSIZE, BLOCKTILE_LENGTH_K* SHAREDMEM_LENGTH_M, SHAREDMEM_LENGTH_N* BLOCKTILE_LENGTH_K, M, N, K, BLOCKTILE_LENGTH_K, BLOCKTILE_LENGTH_M, BLOCKTILE_LENGTH_N>( \
+	A, B, AS, BS, A_threadIdx_X, B_threadIdx_X, A_threadIdx_Y, B_threadIdx_Y)
+#endif
+
+#if !defined(loadRegisters)
+#define loadRegisters(ID, SMEM) loadRegisterFile< \
+SHAREDMEM_LENGTH_##ID, WARP_TILE_LENGTH_##ID, WARP_SUBTILE_LENGTH_##ID, T##ID, WARP_SUBTILES, BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_##ID>( \
+	reg##ID, SMEM, dotIdx, warpIdx_##ID, warpThreadIdx_##ID)
+#endif
+#endif
+
+
+#if !defined(calcResults)
+#define calcResults() calculate_warptiled_MMA<THREADDIM_M, THREADDIM_N, TM, TN>(regM, regN, threadResults)
 #endif
 
 
@@ -60,10 +78,15 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 	float threadResults[TM * TN * WARP_SUBTILES * WARP_SUBTILES] = {};	// Initialise values to 0
 
+#if defined(BUFFERED)
 	__shared__ float AS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
 	__shared__ float BS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
 
 	uint8_t buffer_num = 0;
+#else
+	__shared__ float AS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
+	__shared__ float BS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
+#endif
 
 	A += blockIdx_X * BLOCKTILE_LENGTH_M;
 	B += blockIdx_Y * BLOCKTILE_LENGTH_N * K;
@@ -73,8 +96,6 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 		constexpr uint32_t M_OVER_4 = BLOCKTILE_LENGTH_M / 4;
 		constexpr uint32_t K_OVER_4 = BLOCKTILE_LENGTH_K / 4;
 
-		constexpr uint32_t STRIDE_A = 4 * BLOCKSIZE / BLOCKTILE_LENGTH_M;
-		constexpr uint32_t STRIDE_B = 4 * BLOCKSIZE / BLOCKTILE_LENGTH_K;
 
 		const uint32_t A_threadIdx_X = 4U * (threadId % M_OVER_4);
 		const uint32_t A_threadIdx_Y = threadId / M_OVER_4;
@@ -84,7 +105,12 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 
 		for (uint32_t k = 0; k < K; k += BLOCKTILE_LENGTH_K) {
+#if defined(BUFFERED)
 			loadBlock();
+#else
+			loadBlock();
+#endif
+
 			syncThreads();	// Ensure all data has been loaded into SMEM
 
 			float regM[WARP_SUBTILES * TM];
@@ -92,12 +118,16 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 			for (uint32_t dotIdx = 0; dotIdx < BLOCKTILE_LENGTH_K; ++dotIdx) {
 
+#if defined(BUFFERED)
 				// LOADING DATA INTO REGISTERS
 				// Loading data into regM
 				loadRegisters(M, AS);
-
-				// Loading data into regN
 				loadRegisters(N, BS);
+#else
+
+				loadRegisters(M, AS);
+				loadRegisters(N, BS);
+#endif
 
 				// Calculating the results
 				calcResults();
