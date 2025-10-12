@@ -78,15 +78,15 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 	float threadResults[TM * TN * WARP_SUBTILES * WARP_SUBTILES] = {};	// Initialise values to 0
 
-#if defined(BUFFERED)
-	__shared__ float AS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
-	__shared__ float BS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
+	#if defined(BUFFERED)
+		__shared__ float AS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
+		__shared__ float BS[2][BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
 
-	uint8_t buffer_num = 0;
-#else
-	__shared__ float AS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
-	__shared__ float BS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
-#endif
+		uint8_t buffer = 0;
+	#else
+		__shared__ float AS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_M];
+		__shared__ float BS[BLOCKTILE_LENGTH_K * SHAREDMEM_LENGTH_N];
+	#endif
 
 	A += blockIdx_X * BLOCKTILE_LENGTH_M;
 	B += blockIdx_Y * BLOCKTILE_LENGTH_N * K;
@@ -105,11 +105,8 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 
 		for (uint32_t k = 0; k < K; k += BLOCKTILE_LENGTH_K) {
-#if defined(BUFFERED)
 			loadBlock();
-#else
-			loadBlock();
-#endif
+
 
 			syncThreads();	// Ensure all data has been loaded into SMEM
 
@@ -118,16 +115,10 @@ __global__ void SGEMM(const float* __restrict A, const float* __restrict B, floa
 
 			for (uint32_t dotIdx = 0; dotIdx < BLOCKTILE_LENGTH_K; ++dotIdx) {
 
-#if defined(BUFFERED)
 				// LOADING DATA INTO REGISTERS
 				// Loading data into regM
 				loadRegisters(M, AS);
 				loadRegisters(N, BS);
-#else
-
-				loadRegisters(M, AS);
-				loadRegisters(N, BS);
-#endif
 
 				// Calculating the results
 				calcResults();

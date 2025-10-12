@@ -122,6 +122,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Main.cu" />
+    <CudaCompile Include="microprofiling.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include="notes.md">

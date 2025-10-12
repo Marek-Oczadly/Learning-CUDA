@@ -49,13 +49,21 @@
     <Filter Include="matmul\one-dimensional">
       <UniqueIdentifier>{375bda3a-784a-4d2f-bf88-c13b0b184a82}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="Main.cu" />
+    <Filter Include="microprofiling">
+      <UniqueIdentifier>{441a4128-b856-48e0-ab29-e970f22f9e72}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="notes.md">
       <Filter>matmul</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Main.cu">
+      <Filter>matmul</Filter>
+    </CudaCompile>
+    <CudaCompile Include="microprofiling.cu">
+      <Filter>microprofiling</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
