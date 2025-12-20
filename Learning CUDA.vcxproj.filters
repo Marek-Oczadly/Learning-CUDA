@@ -41,6 +41,9 @@
     <ClInclude Include="hintfile-microprofiling.cuh">
       <Filter>microprofiling</Filter>
     </ClInclude>
+    <ClInclude Include="gmem-to-smem.cuh">
+      <Filter>microprofiling</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="matmul">
