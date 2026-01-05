@@ -35,9 +35,6 @@
     <ClInclude Include="kernel-6a-1D.cuh">
       <Filter>matmul\one-dimensional</Filter>
     </ClInclude>
-    <ClInclude Include="loading-registers.cuh">
-      <Filter>microprofiling</Filter>
-    </ClInclude>
     <ClInclude Include="hintfile-microprofiling.cuh">
       <Filter>microprofiling</Filter>
     </ClInclude>
@@ -74,5 +71,6 @@
     <CudaCompile Include="microprofiling.cu">
       <Filter>microprofiling</Filter>
     </CudaCompile>
+    <CudaCompile Include="loading-registers.cuh" />
   </ItemGroup>
 </Project>

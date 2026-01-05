@@ -2,7 +2,7 @@
 #include "hintfile-1D.cuh"
 
 #define WARPTILED 1
-//#define BUFFERED 1
+//#define BUFFERED 2
 
 
 #if defined(BUFFERED)

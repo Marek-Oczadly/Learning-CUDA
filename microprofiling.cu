@@ -8,7 +8,6 @@
 
 constexpr auto ARR_SIZE = 512 * 16;
 
-
 inline void static checkCudaError(cudaError_t error, const char* function, const char* file, int line) {
 	if (error != cudaSuccess) {
 		std::cerr << "CUDA error in " << file << ":" << line << " (" << function << ") : "
