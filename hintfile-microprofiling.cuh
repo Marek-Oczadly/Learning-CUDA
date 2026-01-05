@@ -41,7 +41,7 @@ consteval uint32_t ABS(int32_t x) {
 template <int32_t VAL>
 __dual__ __forceinline uint32_t directionalRightShift(const uint32_t& x) {
 	if constexpr (VAL == 0) {
-		return x
+		return x;
 	}
 	else if constexpr (ABS(VAL) > 32) {
 		return 0;
