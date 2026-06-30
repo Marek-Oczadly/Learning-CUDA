@@ -7,6 +7,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MBLAS", "Learning CUDA.vcxp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CUDATests", "..\CUDATests\CUDATests.vcxproj", "{C434E124-7524-F523-AB3A-1DFF8FAB28C9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Microprofiling", "..\Microprofiling\Microprofiling.vcxproj", "{36618B42-70F7-972D-EF7E-6790D7B6D2BA}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SharedHeaders", "..\SharedHeaders\SharedHeaders.vcxproj", "{1B30BBA3-85CA-48FE-8937-716DF36B06C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +35,22 @@ Global
 		{C434E124-7524-F523-AB3A-1DFF8FAB28C9}.Sanitizer|x64.Build.0 = Release|x64
 		{C434E124-7524-F523-AB3A-1DFF8FAB28C9}.Test|x64.ActiveCfg = Test|x64
 		{C434E124-7524-F523-AB3A-1DFF8FAB28C9}.Test|x64.Build.0 = Test|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Debug|x64.ActiveCfg = Debug|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Debug|x64.Build.0 = Debug|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Release|x64.ActiveCfg = Release|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Release|x64.Build.0 = Release|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Sanitizer|x64.ActiveCfg = Release|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Sanitizer|x64.Build.0 = Release|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Test|x64.ActiveCfg = Test|x64
+		{36618B42-70F7-972D-EF7E-6790D7B6D2BA}.Test|x64.Build.0 = Test|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Debug|x64.ActiveCfg = Debug|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Debug|x64.Build.0 = Debug|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Release|x64.ActiveCfg = Release|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Release|x64.Build.0 = Release|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Sanitizer|x64.ActiveCfg = Release|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Sanitizer|x64.Build.0 = Release|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Test|x64.ActiveCfg = Debug|x64
+		{1B30BBA3-85CA-48FE-8937-716DF36B06C7}.Test|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
